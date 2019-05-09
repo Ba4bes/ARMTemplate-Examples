@@ -5,4 +5,4 @@ These Folders are to have a collection of ARM Templates I have written blogpost 
 
 ## Generated_ARMTemplate
 
-[Make generated ARM templates production-ready](https://4bes.nl)
+[Make generated ARM templates production-ready]( http://4bes.nl/2019/05/09/make-generated-arm-templates-production-ready)
