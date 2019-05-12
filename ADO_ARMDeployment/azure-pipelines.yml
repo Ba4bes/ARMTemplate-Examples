@@ -1,0 +1,94 @@
+trigger:
+  branches:
+    include:
+    - '*'
+
+stages:
+
+- stage: Build
+  jobs:
+  - job: BuildJob
+    pool:
+      vmImage: windows-2019
+    steps:
+
+    - task: AzureResourceGroupDeployment@2
+      inputs:
+        ConnectedServiceName: 'MPN'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: 'ARMtesting'
+        location: 'West Europe'
+        csmFile: 'Deploymentfiles/StorageAccount/azuredeploy.json'
+        csmParametersFile: 'Deploymentfiles/StorageAccount/azuredeploy.parameters.json'
+        deploymentMode: 'Validation'
+
+    - task: AzureResourceGroupDeployment@2
+      inputs:
+        ConnectedServiceName: 'MPN'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: 'ARMtesting'
+        location: 'West Europe'
+        csmFile: 'Deploymentfiles/VirtualNetwork/Azuredeploy.json'
+        csmParametersFile: 'Deploymentfiles/VirtualNetwork/Azuredeploy.parameters.json'
+        deploymentMode: 'Validation'
+
+    - task: AzurePowerShell@3
+      displayName: 'Test existing resources'
+      inputs:
+        azureSubscription:  'MPN'
+        ScriptType: InlineScript
+        Inline: |
+            Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+            Install-Module -Name ARMHelper -Force -Scope CurrentUser
+            Import-Module -Name ARMHelper
+
+            Test-ARMExistingResource -ResourceGroupName StorageAccount_01 -TemplateFile "$(Build.SourcesDirectory)\Deploymentfiles\StorageAccount\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\Deploymentfiles\StorageAccount\azuredeploy.parameters.json" -Mode Complete
+            Test-ARMExistingResource -ResourceGroupName VirtualNetwork_01 -TemplateFile "$(Build.SourcesDirectory)\Deploymentfiles\VirtualNetwork\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\Deploymentfiles\VirtualNetwork\azuredeploy.parameters.json" -Mode Complete
+        FailOnStandardError: true
+        azurePowerShellVersion: LatestVersion
+
+
+    - task: AzurePowerShell@3
+      displayName: 'Show deployed resources'
+      inputs:
+        azureSubscription:  'MPN'
+        ScriptType: InlineScript
+        Inline: |
+            Test-ARMDeploymentResource -ResourceGroupName StorageAccount_01 -TemplateFile "$(Build.SourcesDirectory)\Deploymentfiles\StorageAccount\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\Deploymentfiles\StorageAccount\azuredeploy.parameters.json" -Mode Complete | Select-Object *
+            Test-ARMDeploymentResource -ResourceGroupName VirtualNetwork_01 -TemplateFile "$(Build.SourcesDirectory)\Deploymentfiles\VirtualNetwork\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\Deploymentfiles\VirtualNetwork\azuredeploy.parameters.json" -Mode Complete | Select-Object *
+        FailOnStandardError: true
+        azurePowerShellVersion: LatestVersion
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: Deploymentfiles'
+      inputs:
+        PathtoPublish: 'Deploymentfiles'
+        ArtifactName: Deploymentfiles
+
+
+- stage: Deploy
+  condition:
+    and(succeeded(), eq(variables['State'], 'Production'))
+  jobs:
+  - job: BuildJob
+    pool:
+      vmImage: windows-2019
+    steps:
+    - task: AzureResourceGroupDeployment@2
+      displayName: 'Azure Deployment:Create Or Update Resource Group action on OC-DC'
+      inputs:
+        azureSubscription: MPN
+        resourceGroupName: 'StorageAccount_01'
+        location: 'West Europe'
+        csmFile: 'Deploymentfiles/StorageAccount/azuredeploy.json'
+        csmParametersFile: 'Deploymentfiles/StorageAccount/AzureDeploy.parameters.json'
+
+    - task: AzureResourceGroupDeployment@2
+      displayName: 'Azure Deployment:Create Or Update Resource Group action on OC-DC'
+      inputs:
+        azureSubscription: MPN
+        resourceGroupName: 'VirtualNetwork_01'
+        location: 'West Europe'
+        csmFile: 'Deploymentfiles/VirtualNetwork/AzureDeploy.json'
+        csmParametersFile: 'Deploymentfiles/VirtualNetwork/AzureDeploy.parameters.json'
+
