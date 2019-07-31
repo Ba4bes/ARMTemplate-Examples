@@ -1,0 +1,24 @@
+parameters:
+  resourceGroupName: ''
+  deploymentFolder: ''
+
+steps:
+- task: AzurePowerShell@3
+  displayName: 'Test existing resources ${{ parameters.resourceGroupName }}'
+  inputs:
+    azureSubscription:  'MPN'
+    ScriptType: InlineScript
+    Inline: |
+        Test-ARMExistingResource -ResourceGroupName ${{ parameters.resourceGroupName }} -TemplateFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.parameters.json" -Mode Complete
+    FailOnStandardError: true
+    azurePowerShellVersion: LatestVersion
+- task: AzurePowerShell@3
+  displayName: 'Show deployed resources ${{ parameters.resourceGroupName }}'
+  inputs:
+    azureSubscription:  'MPN'
+    ScriptType: InlineScript
+    Inline: |
+        Test-ARMDeploymentResource -ResourceGroupName ${{ parameters.resourceGroupName }} -TemplateFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.parameters.json" -Mode Complete | Select-Object *
+
+    FailOnStandardError: true
+    azurePowerShellVersion: LatestVersion
