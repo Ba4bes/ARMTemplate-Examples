@@ -3,6 +3,16 @@ parameters:
   deploymentFolder: ''
 
 steps:
+- task: AzureResourceGroupDeployment@2
+  displayName: Validate ResourcegroupDeployment ${{ parameters.resourceGroupName }}
+  inputs:
+    ConnectedServiceName: 'MPN'
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: ${{ parameters.resourceGroupName }}
+    location: 'West Europe'
+    csmFile: "${{ parameters.deploymentFolder }}/Azuredeploy.json"
+    csmParametersFile: "${{ parameters.deploymentFolder }}/Azuredeploy.parameters.json"
+    deploymentMode: 'Validation'
 - task: AzurePowerShell@3
   displayName: 'Test existing resources ${{ parameters.resourceGroupName }}'
   inputs:
