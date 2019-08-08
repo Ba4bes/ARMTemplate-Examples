@@ -1,0 +1,74 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualNetworkName": {
+            "type": "string"
+        },
+        "virtualNetworkPrefix": {
+            "type": "string"
+        },
+        "subnetName": {
+            "type": "string",
+            "defaultValue": "default"
+        },
+        "subnetAddressPrefix": {
+            "type": "string"
+        },
+        "dnsServer":{
+            "type": "array"
+        },
+        "nsgName":{
+            "type": "string"
+        },
+        "nsgRG":{
+            "type": "string"
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-08-01",
+            "name": "[parameters('virtualNetworkName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "location": "[parameters('location')]",
+            "tags":{
+                "Tag1":"this is tag1",
+                "Tag2":"This is tag2"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('virtualNetworkPrefix')]"
+                    ]
+                },
+                "dhcpOptions": {
+                    "dnsServers": "[parameters('dnsServer')]"
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnetAddressPrefix')]",
+                            "serviceEndpoints": [
+                                {
+                                    "service": "Microsoft.Storage"
+                                },
+                                {
+                                    "service": "Microsoft.KeyVault"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "enableDdosProtection": false
+            }
+        }
+    ]
+}

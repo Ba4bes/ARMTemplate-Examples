@@ -1,0 +1,28 @@
+parameters:
+  azureConnectionName: ''
+  resourceGroupName: ''
+  deploymentFolder: ''
+
+
+steps:
+- task: PowerShell@2
+  inputs:
+    targetType: Inline
+    script : |
+      Try {
+        $Module = Get-InstalledModule ARMHelper -ErrorAction Stop
+      }
+      Catch {
+      Install-Module -Name ARMHelper -Force -Scope CurrentUser
+      }
+      Import-Module -Name ARMHelper
+  displayName: 'Prepair Agent'
+- task: AzurePowerShell@3
+  displayName: 'Show deployed resources ${{ parameters.resourceGroupName }}'
+  inputs:
+    azureSubscription:  ${{ parameters.azureConnectionName }}
+    ScriptType: InlineScript
+    Inline: |
+        Test-ARMDeploymentResource -ResourceGroupName ${{ parameters.resourceGroupName }} -TemplateFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.parameters.json" -Mode Complete | Select-Object *
+    FailOnStandardError: true
+    azurePowerShellVersion: LatestVersion

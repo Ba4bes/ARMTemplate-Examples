@@ -1,0 +1,44 @@
+parameters:
+  azureConnectionName: ''
+  resourceGroupName: ''
+  deploymentFolder: ''
+  deploymentMode: ''
+  throwWhenRemoving: ''
+
+steps:
+- task: AzureResourceGroupDeployment@2
+  displayName: Validate ResourcegroupDeployment ${{ parameters.resourceGroupName }}
+  inputs:
+    ConnectedServiceName: ${{ parameters.azureConnectionName }}
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: ${{ parameters.resourceGroupName }}
+    location: 'West Europe'
+    csmFile: "${{ parameters.deploymentFolder }}/Azuredeploy.json"
+    csmParametersFile: "${{ parameters.deploymentFolder }}/Azuredeploy.parameters.json"
+    deploymentMode: 'Validation'
+- task: PowerShell@2
+  inputs:
+    targetType: Inline
+    script : |
+      Try {
+        $Module = Get-InstalledModule ARMHelper -ErrorAction Stop
+      }
+      Catch {
+      Install-Module -Name ARMHelper -Force -Scope CurrentUser
+      }
+      Import-Module -Name ARMHelper
+  displayName: 'Prepair Agent'
+- task: AzurePowerShell@3
+  displayName: 'Test existing resources ${{ parameters.resourceGroupName }}'
+  inputs:
+    azureSubscription:  ${{ parameters.azureConnectionName }}
+    ScriptType: InlineScript
+    Inline: |
+        if ( "${{ parameters.throwWhenRemoving }}" -eq "True" ) {
+        Test-ARMExistingResource -ResourceGroupName ${{ parameters.resourceGroupName }} -TemplateFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.parameters.json" -Mode  ${{ parameters.deploymentMode }} -ThrowWhenRemoving
+        }
+        else {
+        Test-ARMExistingResource -ResourceGroupName ${{ parameters.resourceGroupName }} -TemplateFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.json" -TemplateParameterFile "$(Build.SourcesDirectory)\${{ parameters.deploymentFolder }}\azuredeploy.parameters.json" -Mode  ${{ parameters.deploymentMode }}
+        }
+    FailOnStandardError: true
+    azurePowerShellVersion: LatestVersion

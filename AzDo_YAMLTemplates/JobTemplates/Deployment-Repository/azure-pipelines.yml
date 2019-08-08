@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+    - '*'
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: Templates/Pipelines
+
+stages:
+
+- stage: Build
+  jobs:
+  - template: Build\BuildProdARMTemplate.yml@templates
+    parameters:
+      azureConnectionName: MPN
+      resourceGroupName: StorageAccount_01
+      deploymentFolder: Deploymentfiles/StorageAccount
+      deploymentMode: Incremental
+      throwWhenRemoving: 'false'
+  - template: Build\BuildProdARMTemplate.yml@templates
+    parameters:
+      azureConnectionName: MPN
+      resourceGroupName: VirtualNetwork_01
+      deploymentFolder: Deploymentfiles/VirtualNetwork
+      deploymentMode: Incremental
+      throwWhenRemoving: 'false'
+
+- stage: Deploy
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  jobs:
+  - template: Deploy\DeployARMTemplate.yml@templates
+    parameters:
+      azureConnectionName: MPN
+      resourceGroupName: StorageAccount_01
+      deploymentFolder: Deploymentfiles/StorageAccount
+      deploymentMode: Incremental
+  - template: Deploy\DeployARMTemplate.yml@templates
+    parameters:
+      azureConnectionName: MPN
+      resourceGroupName: VirtualNetwork_01
+      deploymentFolder: Deploymentfiles/VirtualNetwork
+      deploymentMode: Incremental
+

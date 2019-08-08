@@ -1,0 +1,15 @@
+parameters:
+  azureConnectionName: ''
+  resourceGroupName: ''
+  deploymentFolder: ''
+  deploymentMode: ''
+
+jobs:
+- job: "Build${{ parameters.resourceGroupName }}"
+  pool:
+    vmImage: windows-2019
+  steps:
+  - template: Templates\ARMHelper_ShowDeployedResources.YML
+    parameters:
+      resourceGroupName: ${{ parameters.resourceGroupName }}
+      deploymentFolder: ${{ parameters.deploymentFolder }}

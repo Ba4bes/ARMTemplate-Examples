@@ -1,0 +1,25 @@
+parameters:
+  azureConnectionName: ''
+  resourceGroupName: ''
+  deploymentFolder: ''
+  deploymentMode: ''
+  throwOnError: ''
+
+
+jobs:
+- job: "Build${{ parameters.resourceGroupName }}"
+  pool:
+    vmImage: windows-2019
+  steps:
+  - template: Templates\ARMHelper_ShowDeployedResources.YML
+    parameters:
+      azureConnectionName: "${{ parameters.azureConnectionName }}"
+      resourceGroupName: ${{ parameters.resourceGroupName }}
+      deploymentFolder: ${{ parameters.deploymentFolder }}
+  - template: Templates\ARMHelper_TestExistingResources.YML
+    parameters:
+      azureConnectionName: "${{ parameters.azureConnectionName }}"
+      resourceGroupName: ${{ parameters.resourceGroupName }}
+      deploymentFolder: ${{ parameters.deploymentFolder }}
+      deploymentMode: ${{ parameters.deploymentMode }}
+      throwWhenRemoving: ${{ parameters.throwWhenRemoving }}
